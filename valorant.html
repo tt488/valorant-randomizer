@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VALORANT 戰術與特務產生器</title>
+    <!-- 引入 Tailwind CSS 作為快速排版與樣式工具 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // 自訂 Tailwind 的主題設定，加入 Valorant 經典紅色
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        valoRed: '#ff4655', // 特戰英豪經典紅
+                        valoDark: '#111111', // 深色背景
+                        valoCard: '#1f1f1f'  // 卡片背景色
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Microsoft JhengHei', 'sans-serif'], // 現代乾淨字體
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 簡單的按鈕發光與點擊動畫設定 */
+        .btn-glow {
+            box-shadow: 0 0 15px rgba(255, 70, 85, 0.4);
+        }
+        .btn-glow:hover {
+            box-shadow: 0 0 25px rgba(255, 70, 85, 0.7);
+        }
+    </style>
+</head>
+<body class="bg-valoDark text-white font-sans min-h-screen flex flex-col items-center justify-center p-6 selection:bg-valoRed selection:text-white">
+
+    <!-- 網頁主要標題 -->
+    <header class="mb-10 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold tracking-wider uppercase mb-2">
+            VALORANT <span class="text-valoRed">戰術與特務產生器</span>
+        </h1>
+        <p class="text-gray-400 text-sm md:text-base">為你的下一局遊戲注入一點新鮮感與挑戰</p>
+    </header>
+
+    <!-- 顯示結果的三個卡片區塊 -->
+    <main class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl mb-12">
+        
+        <!-- 卡片 1：地圖 -->
+        <div class="bg-valoCard rounded-xl p-8 border-t-4 border-valoRed shadow-lg flex flex-col items-center justify-center text-center transition-transform hover:-translate-y-1 duration-300">
+            <h2 class="text-gray-400 text-sm uppercase tracking-widest mb-4">地圖 (Map)</h2>
+            <p id="map-result" class="text-2xl font-bold text-white min-h-[2rem]">等待抽取...</p>
+        </div>
+
+        <!-- 卡片 2：特務陣容 -->
+        <div class="bg-valoCard rounded-xl p-8 border-t-4 border-valoRed shadow-lg flex flex-col items-center justify-center text-center transition-transform hover:-translate-y-1 duration-300">
+            <h2 class="text-gray-400 text-sm uppercase tracking-widest mb-4">特務陣容 (Team Composition)</h2>
+            <div id="agents-result" class="text-xl font-bold text-white flex flex-wrap justify-center gap-2 min-h-[4rem] items-center">
+                等待抽取...
+            </div>
+        </div>
+
+        <!-- 卡片 3：趣味戰術 -->
+        <div class="bg-valoCard rounded-xl p-8 border-t-4 border-valoRed shadow-lg flex flex-col items-center justify-center text-center transition-transform hover:-translate-y-1 duration-300">
+            <h2 class="text-gray-400 text-sm uppercase tracking-widest mb-4">趣味戰術 (Challenge)</h2>
+            <p id="challenge-result" class="text-xl font-bold text-white min-h-[4rem] flex items-center justify-center">等待抽取...</p>
+        </div>
+
+    </main>
+
+    <!-- 互動按鈕 -->
+    <button id="roll-btn" class="bg-valoRed hover:bg-[#e03e4b] text-white font-bold py-4 px-12 rounded-lg text-2xl tracking-widest transition-all duration-200 transform hover:scale-105 active:scale-95 btn-glow focus:outline-none focus:ring-4 focus:ring-red-900">
+        ROLL (隨機抽取)
+    </button>
+
+    <footer class="mt-16 text-gray-600 text-xs text-center">
+        Created via Vibe Coding Assignment
+    </footer>
+
+    <!-- JavaScript 邏輯區塊 -->
+    <script>
+        // 1. 資料庫設定
+        const maps = [
+            "雙塔迷城", "劫境之地", "遺落神境", "義境空島", "極地寒港", 
+            "熱帶樂園", "天涯眾城", "蓮華古城", "日落之城", "祕密深淵"
+        ];
+
+        const agents = [
+            "捷風", "菲尼克斯", "芮茲", "蕾娜", "夜戮", "妮虹", "離索", "叛奇", 
+            "KAY/O", "絲凱", "蘇法", "菲德", "蓋克", "歐門", "亞星宙", "薇蝮", 
+            "哈泊", "硫磺", "瑟符", "愷宙", "錢貝爾", "蒂羅", "薇絲"
+        ];
+
+        const challenges = [
+            "經濟局王者：只能買神射", 
+            "腳步聲大放送：全體不准按 Shift 走路", 
+            "致敬 VCT CN：開局五人極限前壓", 
+            "封印解除失敗：整場禁用大絕", 
+            "近戰法師：只能用散彈槍 (Bucky/Judge)", 
+            "Rush B：拿到包就衝，絕對不退", 
+            "保鏢模式：四個人保護拿炸彈的人，他死就全體送頭"
+        ];
+
+        // 2. 工具函數：陣列洗牌 (Fisher-Yates Shuffle) - 用來產生不重複的特務
+        function shuffleArray(array) {
+            // 複製一份陣列，避免改動到原始資料庫
+            let shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // 3. 取得 DOM 元素
+        const mapResultEl = document.getElementById('map-result');
+        const agentsResultEl = document.getElementById('agents-result');
+        const challengeResultEl = document.getElementById('challenge-result');
+        const rollBtn = document.getElementById('roll-btn');
+
+        // 4. 點擊事件邏輯
+        rollBtn.addEventListener('click', () => {
+            
+            // 加入按鈕點擊的小特效回饋 (可選)
+            rollBtn.classList.add('bg-white', 'text-valoRed');
+            setTimeout(() => {
+                rollBtn.classList.remove('bg-white', 'text-valoRed');
+            }, 100);
+
+            // --- 抽取地圖 ---
+            const randomMap = maps[Math.floor(Math.random() * maps.length)];
+            mapResultEl.textContent = randomMap;
+
+            // --- 抽取特務 (5位不重複) ---
+            const shuffledAgents = shuffleArray(agents);
+            const selectedAgents = shuffledAgents.slice(0, 5); // 取洗牌後的前5個
+            
+            // 清空舊特務並將特務名稱裝飾成標籤樣式
+            agentsResultEl.innerHTML = '';
+            selectedAgents.forEach(agent => {
+                const span = document.createElement('span');
+                span.className = 'bg-gray-800 text-[#ff4655] px-3 py-1 rounded-md text-base border border-gray-700 shadow-sm';
+                span.textContent = agent;
+                agentsResultEl.appendChild(span);
+            });
+
+            // --- 抽取趣味戰術 ---
+            const randomChallenge = challenges[Math.floor(Math.random() * challenges.length)];
+            challengeResultEl.textContent = randomChallenge;
+
+        });
+    </script>
+</body>
+</html>
